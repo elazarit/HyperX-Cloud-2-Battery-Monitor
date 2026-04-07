@@ -337,7 +337,7 @@ namespace Cloud2BatteryMonitorUI {
 						if (!lowBatteryPopupShown)
 						{
 							this->iconSystemTray->BalloonTipTitle = "Battery monitor";
-							this->iconSystemTray->BalloonTipText = "battery level low: " + batteryLevel + "%";
+							this->iconSystemTray->BalloonTipText = "Battery level low: " + batteryLevel + "%";
 							this->iconSystemTray->ShowBalloonTip(5000);
 							lowBatteryPopupShown = true;
 						}
