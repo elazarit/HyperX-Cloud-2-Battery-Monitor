@@ -46,6 +46,9 @@ namespace Cloud2BatteryMonitorUI {
 		//a variable to hold offline icon permanently
 		System::Drawing::Icon^ defaultOfflineIcon;
 
+		//holds the currently generated tray icon so it can be disposed safely on refresh
+		System::Drawing::Icon^ currentTrayGeneratedIcon = nullptr;
+
 		MainForm(void)
 		{
 			InitializeComponent();
@@ -66,6 +69,13 @@ namespace Cloud2BatteryMonitorUI {
 			if (components)
 			{
 				delete components;
+			}
+
+			//dispose of the current generated tray icon if it exists
+			if (currentTrayGeneratedIcon != nullptr)
+			{
+				delete currentTrayGeneratedIcon;
+				currentTrayGeneratedIcon = nullptr;
 			}
 
 			//dispose of the cached offline icon when the app closes
@@ -477,10 +487,22 @@ namespace Cloud2BatteryMonitorUI {
 				hIcon = RefreshTrayNumber(batteryLevel, settingsHelper);
 			}
 
-			//apply icon
-			this->iconSystemTray->Icon = System::Drawing::Icon::FromHandle(hIcon);
+			//dispose of the previous generated tray icon before creating a new one
+			if (currentTrayGeneratedIcon != nullptr)
+			{
+				delete currentTrayGeneratedIcon;
+				currentTrayGeneratedIcon = nullptr;
+			}
 
-			//destroy the unmanaged handle!
+			//create a temporary wrapper from the unmanaged handle,
+			//clone it so the tray owns a safe managed copy,
+			//then destroy the original unmanaged handle
+			System::Drawing::Icon^ tempIcon = System::Drawing::Icon::FromHandle(hIcon);
+			currentTrayGeneratedIcon = safe_cast<System::Drawing::Icon^>(tempIcon->Clone());
+
+			this->iconSystemTray->Icon = currentTrayGeneratedIcon;
+
+			delete tempIcon;
 			DestroyIcon(hIcon);
 
 			trayText += BATTERY_LEVEL_STRING + batteryLevel + "%";
@@ -489,6 +511,13 @@ namespace Cloud2BatteryMonitorUI {
 		else
 		{
 			trayText += BATTERY_LEVEL_STRING + "N/A";
+
+			//dispose of the previous generated tray icon when switching to offline icon
+			if (currentTrayGeneratedIcon != nullptr)
+			{
+				delete currentTrayGeneratedIcon;
+				currentTrayGeneratedIcon = nullptr;
+			}
 
 			//use loaded offline icon
 			this->iconSystemTray->Icon = defaultOfflineIcon;
